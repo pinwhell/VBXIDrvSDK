@@ -1,6 +1,6 @@
-[submodule "vendor/FsLibc"]
-	path = vendor/FsLibc
-	url = https://github.com/Velko/FsLibc.git
 [submodule "vendor/etl"]
 	path = vendor/etl
 	url = https://github.com/ETLCPP/etl
+[submodule "FsLibc"]
+	path = vendor/FsLibc
+	url = https://github.com/pinwhell/FsLibc.git
