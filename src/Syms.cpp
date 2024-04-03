@@ -3,38 +3,38 @@
 #include <Kernel/Offs.h>
 #include <fslc_string.h>
 
-DECL(unsigned int) mem_map;
-DECL(unsigned long) current_task;
+DECL(uintptr_t) mem_map;
+DECL(uintptr_t) current_task;
 
-__attribute__((always_inline)) unsigned long readfsdword(unsigned long Offset) {
-    unsigned long value;
-    asm volatile("mov %%fs:%1, %0" : "=r" (value) : "m" (*(unsigned long*)Offset));
+__attribute__((always_inline)) uintptr_t readfsdword(uintptr_t Offset) {
+    uintptr_t value;
+    asm volatile("mov %%fs:%1, %0" : "=r" (value) : "m" (*(uintptr_t*)Offset));
     return value;
 }
 
-unsigned int get_task_parent(unsigned int task)
+uintptr_t get_task_parent(uintptr_t task)
 {
-    return *(unsigned int*)(task + TASK_STRUCT_PARENT_OFF);
+    return *(uintptr_t*)(task + TASK_STRUCT_PARENT_OFF);
 }
 
-unsigned long get_current()
+uintptr_t get_current()
 {
     return readfsdword(current_task);
 }
 
-unsigned long get_stack(unsigned int task)
+uintptr_t get_stack(uintptr_t task)
 {
-    return *(unsigned long*)(task + TASK_STACK_OFF);
+    return *(uintptr_t*)(task + TASK_STACK_OFF);
 }
 
 // #define MAX_CALL_STACK 10
 
-// void traverse_call_stack(int(*callback)(unsigned int ret_at, void* param), void* param)
+// void traverse_call_stack(int(*callback)(uintptr_t ret_at, void* param), void* param)
 // {
 //     struct pt_regs* regs = get_curr_pt_regs();
 
-//     unsigned int frame_ptr = regs->bp;
-//     unsigned int ret_addr = regs->ip;
+//     uintptr_t frame_ptr = regs->bp;
+//     uintptr_t ret_addr = regs->ip;
 
 //     if(callback(ret_addr, param) == 0)
 //         return;
@@ -59,12 +59,12 @@ unsigned long get_stack(unsigned int task)
 //     } while((frame_ptr = read_int_from_user(frame_ptr)) != 0 && count++ < MAX_CALL_STACK);
 // }
 
-unsigned int get_task_group_leader(unsigned int task)
+uintptr_t get_task_group_leader(uintptr_t task)
 {
-    return *(unsigned int*)(task + TASK_STRUCT_GROUP_LEADER_OFF);
+    return *(uintptr_t*)(task + TASK_STRUCT_GROUP_LEADER_OFF);
 }
 
-const char* get_task_name(unsigned int task, char* name, size_t namesz)
+const char* get_task_name(uintptr_t task, char* name, size_t namesz)
 {
     name[0] = '\0';
 
@@ -80,10 +80,10 @@ const char* get_task_name(unsigned int task, char* name, size_t namesz)
     return name;
 }
 
-int task_struct_self_or_acenstor_named(unsigned int task_struct, const char* name)
+int task_struct_self_or_acenstor_named(uintptr_t task_struct, const char* name)
 {
-    unsigned int last_task = 0;
-    unsigned int curr = task_struct;
+    uintptr_t last_task = 0;
+    uintptr_t curr = task_struct;
     char curr_name_buff[26];
 
     do {
@@ -107,15 +107,15 @@ int current_task_struct_self_or_acenstor_named(const char* name)
 
 const char* get_curr_task_name(char* name, size_t namesz)
 {
-    unsigned int curr = get_current();
+    uintptr_t curr = get_current();
 
     return get_task_name(curr, name, namesz);
 }
 
-unsigned int phys_to_page(unsigned int phys_addr)
+uintptr_t phys_to_page(uintptr_t phys_addr)
 {
-    unsigned int pfn = phys_addr / 4096;
+    size_t pfn = phys_addr / 4096;
 
-    return (*(unsigned int*)mem_map) + pfn * 32;
+    return (*(uintptr_t*)mem_map) + pfn * 32;
 }
 

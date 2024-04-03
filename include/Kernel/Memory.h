@@ -2,8 +2,8 @@
 
 #include <Kernel/Syms.h>
 
-REGPARAMDECL(unsigned long) read_cr0();
-REGPARAMDECL(void) write_cr0(unsigned long newCr0);
+REGPARAMDECL(uintptr_t) read_cr0();
+REGPARAMDECL(void) write_cr0(uintptr_t newCr0);
 
 #define CR0Read read_cr0
 #define CR0Write(x) write_cr0(x)

@@ -2,11 +2,12 @@
 
 #include <stdint.h>
 
+#define CDECL __attribute__((cdecl))
 #define KERNEL_CALL __attribute__((regparm(3)))
-#define DECL(x) extern "C" [[gnu::weak]] x 
+#define DECL(x) __attribute__((visibility("default"))) extern "C" [[gnu::weak]] x 
 #define EXPORT(x) __attribute__((visibility("default"))) extern "C" x 
 #define REGPARAMDECL(x) DECL(x) KERNEL_CALL
-#define KERNDECL(x) x KERNEL_CALL
+#define KERNDECL(x) __attribute__((visibility("default"))) x KERNEL_CALL
 
 #include <Kernel/Errno.h>
 

@@ -10,8 +10,9 @@ else()
     target_compile_definitions(VBXIDrvSDK PUBLIC BITS64)
 endif()
 
-target_compile_options(VBXIDrvSDK PRIVATE -fno-exceptions -fno-stack-protector)
+target_compile_options(VBXIDrvSDK INTERFACE -fno-exceptions -fno-stack-protector -mregparm=3 -fvisibility=hidden)
 
 # Forcing Linking No Discard of Entry/Exit Points
 add_library(VBXIDrvSDKEntry STATIC Entry.cxx)
 target_link_libraries(VBXIDrvSDK $<LINK_LIBRARY:WHOLE_ARCHIVE,VBXIDrvSDKEntry>) 
+target_compile_options(VBXIDrvSDKEntry INTERFACE -fno-exceptions -fno-stack-protector -mregparm=3)

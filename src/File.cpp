@@ -33,12 +33,12 @@
 #define SEEK_CUR    1   // Set file offset to current plus offset
 #define SEEK_END    2   // Set file offset to EOF plus offset
 
-fd __to_fd(unsigned long v)
+fd __to_fd(uintptr_t v)
 {
-    return { (unsigned int)(v & ~3), v & 3 };
+    return { (uintptr_t)(v & ~3), v & 3 };
 }
 
-fd fdget(unsigned int fd)
+fd fdget(uintptr_t fd)
 {
     return __to_fd(__fdget(fd));
 }
@@ -121,7 +121,7 @@ File* FileOpen(const char* path, const char* mode, bool append, bool truncate)
     // At this point, 
     // we have no memory
 
-    filp_close(file, NULL);
+    filp_close(file, 0);
     return nullptr;
 }
 
@@ -195,7 +195,7 @@ void FileClose(File* file){
     if(file == nullptr)
         return;
 
-    filp_close(file->file, NULL);
+    filp_close(file->file, 0);
 
     kfree(file);
 }
@@ -269,13 +269,13 @@ int KernelFileDeleteByName(const char* name)
     if (err)
         return err;
 
-    unsigned int dentry = _path.dentry;
-    unsigned int parent_dentry = *(unsigned int*)(_path.dentry + DENTRY_PARENT);
-    unsigned int parent_inode = *(unsigned int*)(parent_dentry + DENTRY_INODE);
+    uintptr_t dentry = _path.dentry;
+    uintptr_t parent_dentry = *(uintptr_t*)(_path.dentry + DENTRY_PARENT);
+    uintptr_t parent_inode = *(uintptr_t*)(parent_dentry + DENTRY_INODE);
 
     // Unlink (delete) the file
     err = vfs_unlink(parent_inode, _path.dentry, 0);
-    path_put((unsigned int)&_path);
+    path_put((uintptr_t)&_path);
 
     if (err)
         return err;
@@ -292,7 +292,7 @@ bool KernelFileExist(const char* userPath)
     if (result)
         return false;
 
-    path_put((unsigned int)&path);
+    path_put((uintptr_t)&path);
 
     return true;
 }

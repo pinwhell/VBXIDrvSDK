@@ -5,16 +5,16 @@
 constexpr size_t MAX_FILE_PATH = 4096;
 
 struct fd {
-	unsigned int file;
-	unsigned int flags;
+	uintptr_t file;
+	uintptr_t flags;
 };
 
 struct path {
-	unsigned int mnt;
-	unsigned int dentry;
+	uintptr_t mnt;
+	uintptr_t dentry;
 };
 
-fd fdget(unsigned int fd);
+fd fdget(uintptr_t fd);
 
 struct File;
 using KernelFile = uintptr_t;
