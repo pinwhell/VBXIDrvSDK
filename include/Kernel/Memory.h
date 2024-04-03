@@ -49,3 +49,5 @@ void MemoryWriteToUser(uintptr_t at, T what)
 {
     copy_to_user((void __user *)at, &what, sizeof(T));
 }
+
+int HookBackupLengthGet(const void* at);

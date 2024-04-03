@@ -24,6 +24,11 @@ void MemoryPatch(void* dst, const void* src, size_t len)
     fslc_memcpy(dst, src, len);
 }
 
+int HookBackupLengthGet(const void* at)
+{
+    return 0;
+}
+
 // int detour32(void* from, void* to, size_t len)
 // {
 //     if(len < 5)
