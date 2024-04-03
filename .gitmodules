@@ -4,3 +4,6 @@
 [submodule "FsLibc"]
 	path = vendor/FsLibc
 	url = https://github.com/pinwhell/FsLibc.git
+[submodule "vendor/nmd"]
+	path = vendor/nmd
+	url = https://github.com/Nomade040/nmd
