@@ -2,11 +2,11 @@
 
 #include <Kernel/Syms.h>
 
-REGPARAMDECL(uintptr_t) read_cr0();
-REGPARAMDECL(void) write_cr0(uintptr_t newCr0);
+REGPARAMDECL(uintptr_t) native_read_cr0();
+REGPARAMDECL(void) native_write_cr0(uintptr_t newCr0);
 
-#define CR0Read read_cr0
-#define CR0Write(x) write_cr0(x)
+#define CR0Read native_read_cr0
+#define CR0Write(x) native_write_cr0(x)
 
 struct CR0ScopedBackup {
     CR0ScopedBackup();
@@ -50,4 +50,9 @@ void MemoryWriteToUser(uintptr_t at, T what)
     copy_to_user((void __user *)at, &what, sizeof(T));
 }
 
-int HookBackupLengthGet(const void* at);
+void* MemoryAllocX(size_t size);
+size_t HookBackupLengthGet(void* at);
+void HookDetourInstall(void* at, void* replace);
+size_t HookReplaceBackupCreate(void* at, void** outBackup);
+bool HookTrampInstall(void* at, void* replace, void** backup);
+bool HookTrampRestore(void* at, void* backup);

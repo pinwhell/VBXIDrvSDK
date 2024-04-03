@@ -1,6 +1,15 @@
 #include <Kernel/Memory.h>
 #include <Kernel/Syms.h>
 #include <fslc_string.h>
+#include <nmd_assembly.h>
+
+#ifdef BITS32
+constexpr size_t JMP_SZ = 5;
+constexpr auto NMD_MODE = NMD_X86_MODE_32;
+#elif defined(BITS64)
+constexpr size_t JMP_SZ = 14;
+constexpr auto NMD_MODE = NMD_X86_MODE_64;
+#endif
 
 CR0ScopedBackup::CR0ScopedBackup()
 {
@@ -24,9 +33,118 @@ void MemoryPatch(void* dst, const void* src, size_t len)
     fslc_memcpy(dst, src, len);
 }
 
-int HookBackupLengthGet(const void* at)
+size_t X86HookBackupLengthGet(void* at)
 {
-    return 0;
+    size_t result = 0;
+
+    for (char* i = (char*)at;;)
+    {
+        size_t currLen = nmd_x86_ldisasm(i, 0x100, NMD_MODE);
+
+        if (!currLen)
+            break;
+
+        result += currLen;
+        i += currLen;
+
+        if (result < JMP_SZ)
+            continue;
+
+        break;
+    }
+
+    return result;
+}
+
+void* MemoryAllocX(size_t size)
+{
+    void* buff = kmalloc(size, GFP_KERNEL);
+
+    set_memory_x((uintptr_t)buff, size);
+
+    return buff;
+}
+
+size_t HookBackupLengthGet(void* at)
+{
+    return X86HookBackupLengthGet(at);
+}
+
+/*
+* Computes a JMP Direct/Indirect from src to dst
+* outJmp Expected to have JMP_SIZE bytes available
+*/
+void X86JMPCompute(void* outJmp, void* dst, void* src = nullptr)
+{
+    unsigned char jmpInst[]{
+#ifdef BITS32
+        0xE9, 0x00, 0x00, 0x00, 0x00,
+#else 
+        0xFF, 0x25, 0x00, 0x00, 0x00, 0x00, // jmp qword ptr [$+6]
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 // ptr
+#endif
+    };
+
+#ifdef BITS32
+    *(uint32_t*)(jmpInst + 1) = ((int32_t)dst - (int32_t)src) - 5;
+#else
+    *(void**)(jmpInst + 6) = replace;
+#endif
+
+    fslc_memcpy(outJmp, jmpInst, sizeof(jmpInst));
+}
+
+void X86HookDetourInstall(void* at, void* replace)
+{
+    char jmpDetour[JMP_SZ];
+    X86JMPCompute(jmpDetour, replace, at);
+    MemoryPatch(at, jmpDetour, sizeof(jmpDetour));
+}
+
+size_t HookReplaceBackupCreate(void* at, void** outBackup)
+{
+    if (outBackup == nullptr)
+        return 0;
+
+    size_t backupLen = HookBackupLengthGet(at);
+
+    if (!backupLen)
+        return backupLen;
+
+    void* backup = MemoryAllocX(backupLen + JMP_SZ);
+    fslc_memcpy(backup, at, backupLen);
+    X86JMPCompute((char*)backup + backupLen, at, backup);
+
+    *outBackup = backup;
+
+    return backupLen + JMP_SZ;
+}
+
+void HookDetourInstall(void* at, void* replace)
+{
+    X86HookDetourInstall(at, replace);
+}
+
+bool HookTrampInstall(void* at, void* replace, void** backup)
+{
+    if (HookReplaceBackupCreate(at, backup) == 0)
+        return false;
+
+    HookDetourInstall(at, replace);
+
+    return true;
+}
+
+bool HookTrampRestore(void* at, void* backup)
+{
+    size_t backupLen = HookBackupLengthGet(backup);
+
+    if (!backupLen)
+        return false;
+
+    MemoryPatch(at, backup, backupLen);
+
+    return true;
 }
 
 // int detour32(void* from, void* to, size_t len)
