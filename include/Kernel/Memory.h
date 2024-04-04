@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Kernel/Syms.h>
+#include <etl/string.h>
 
 REGPARAMDECL(uintptr_t) native_read_cr0();
 REGPARAMDECL(void) native_write_cr0(uintptr_t newCr0);
@@ -30,29 +31,36 @@ void MemoryPatchObject(void* dst, T obj)
     MemoryPatch(dst, (const void*)&obj, sizeof(obj));
 }
 
-void patch(void* dst, const void* src, size_t sz);
-int detour32(void* from, void* to, size_t len);
-int trampoline32(void* from, void* to, size_t len, void** out_original);
+void MemoryFromUserRead(void* dst, const void __user * src, size_t len);
+void MemoryToUserWrite(void __user * dst, const void* src, size_t len);
 
 template <typename T>
-T MemoryReadFromUser(uintptr_t at)
+T MemoryFromUserReadObject(const void __user * at)
 {
     T obj;
 
-    copy_from_user(&obj, (const void __user *)at, sizeof(T));
+    MemoryFromUserRead(&obj, at, sizeof(obj));
 
     return obj;
 }
 
 template <typename T>
-void MemoryWriteToUser(uintptr_t at, T what)
+void MemoryToUserWriteObject(void __user * at, T what)
 {
-    copy_to_user((void __user *)at, &what, sizeof(T));
+    MemoryToUserWrite(at, &what, sizeof(what));
 }
 
-void* MemoryAllocX(size_t size);
+void* MemoryAlloc(size_t size, bool bExecutable = true);
 size_t HookBackupLengthGet(void* at);
 void HookDetourInstall(void* at, void* replace);
 size_t HookReplaceBackupCreate(void* at, void** outBackup);
 bool HookTrampInstall(void* at, void* replace, void** backup);
 bool HookTrampRestore(void* at, void* backup);
+
+template<size_t maxCapacity>
+etl::string<maxCapacity> MemoryFromUserString(const char __user* at)
+{
+    etl::string<maxCapacity> result;
+    strncpy_from_user(result.data(), at, maxCapacity);
+    return result;
+}

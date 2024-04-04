@@ -65,7 +65,7 @@ struct File {
 
 int FileModeFlagsFromModeString(const char* mode)
 {
-    size_t modeLen = strlen(mode);
+    size_t modeLen = fslc_strlen(mode);
 
     if(modeLen == 0)
         return 0;
@@ -100,7 +100,9 @@ File* FileOpen(const char* path, const char* mode, bool append, bool truncate)
     if(truncate == true)
         modeFlags |= O_TRUNC;
 
+
     uintptr_t file = (uintptr_t) filp_open(path, modeFlags, 0777);
+
 
     if(IS_ERR_VALUE(file) == true)
     {
@@ -115,7 +117,6 @@ File* FileOpen(const char* path, const char* mode, bool append, bool truncate)
         result->file = file;
         result->append = append;
         return result;
-        
     }
 
     // At this point, 

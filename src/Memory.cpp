@@ -33,6 +33,16 @@ void MemoryPatch(void* dst, const void* src, size_t len)
     fslc_memcpy(dst, src, len);
 }
 
+void MemoryFromUserRead(void* dst, const void __user* src, size_t len)
+{
+    copy_from_user(dst, src, len);
+}
+
+void MemoryToUserWrite(void __user* dst, const void* src, size_t len)
+{
+    copy_to_user(dst, src, len);
+}
+
 size_t X86HookBackupLengthGet(void* at)
 {
     size_t result = 0;
@@ -56,13 +66,24 @@ size_t X86HookBackupLengthGet(void* at)
     return result;
 }
 
-void* MemoryAllocX(size_t size)
+void* MemoryAlloc(size_t size, bool bExecutable)
 {
     void* buff = kmalloc(size, GFP_KERNEL);
 
-    set_memory_x((uintptr_t)buff, size);
+    if(bExecutable)
+        set_memory_x((uintptr_t)buff, size);
 
     return buff;
+}
+
+void* operator new(size_t size)
+{
+    return MemoryAlloc(size);
+}
+
+void operator delete(void* ptr) noexcept {
+    // Must Implement!.
+    return;
 }
 
 size_t HookBackupLengthGet(void* at)
@@ -111,7 +132,7 @@ size_t HookReplaceBackupCreate(void* at, void** outBackup)
     if (!backupLen)
         return backupLen;
 
-    void* backup = MemoryAllocX(backupLen + JMP_SZ);
+    void* backup = MemoryAlloc(backupLen + JMP_SZ);
     fslc_memcpy(backup, at, backupLen);
     X86JMPCompute((char*)backup + backupLen, at, backup);
 
