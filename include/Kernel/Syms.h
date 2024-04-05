@@ -4,7 +4,7 @@
 
 struct path;
 
-REGPARAMDECL(int) set_memory_x(uintptr_t addr, int numPages);
+REGPARAMDECL(int) set_memory_x(void* addr, size_t numPages);
 REGPARAMDECL(void*) __kmalloc(uintptr_t sz, uintptr_t flags);
 REGPARAMDECL(char*) get_task_comm(char* out_task_comm, void* task_struct);
 REGPARAMDECL(long) strncpy_from_user(char *dest, const char __user *src, long count);
@@ -31,6 +31,7 @@ DECL(int) printk(const char * format, ...);
 DECL(void) dump_stack();
 DECL(int) sys_getpid();
 DECL(void**) sys_call_table;
+REGPARAMDECL(void*) kallsyms_lookup_name(const char* name);
 
 #define kmalloc __kmalloc
 #define copy_from_user _copy_from_user

@@ -12,3 +12,15 @@ __attribute__((visibility("default"))) extern "C" void _unload()
 {
     DriverShootdown();
 }
+
+// Dummy Symbol
+__attribute__((visibility("default"))) extern "C" int __cxa_atexit(void(*lpfunc)(void*), void* obj, void* lpdso_handle)
+{
+    return 0;
+}
+
+// Dummy Symbol
+__attribute__((visibility("default"))) extern "C" int __cxa_finalize(void*)
+{
+    return 0;
+}

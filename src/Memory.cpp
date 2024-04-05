@@ -11,6 +11,18 @@ constexpr size_t JMP_SZ = 14;
 constexpr auto NMD_MODE = NMD_X86_MODE_64;
 #endif
 
+struct ScopedDisableInterupts {
+    ScopedDisableInterupts()
+    {
+        asm("cli");
+    }
+
+    ~ScopedDisableInterupts()
+    {
+        asm("sti");
+    }
+};
+
 CR0ScopedBackup::CR0ScopedBackup()
 {
     mPrevCR0 = CR0Read();
@@ -23,12 +35,15 @@ CR0ScopedBackup::~CR0ScopedBackup()
 
 CR0WPDisableScoped::CR0WPDisableScoped()
 {
-    CR0Write(CR0Read() & 0xFFFEFFFF);
+    uintptr_t disableWpMask = 0x00010000;
+    disableWpMask = ~disableWpMask;
+    CR0Write(CR0Read() & disableWpMask);
 }
 
 void MemoryPatch(void* dst, const void* src, size_t len)
 {
     CR0WPDisableScoped wpDisable;
+    ScopedDisableInterupts iruptsDisable;
 
     fslc_memcpy(dst, src, len);
 }
@@ -68,10 +83,21 @@ size_t X86HookBackupLengthGet(void* at)
 
 void* MemoryAlloc(size_t size, bool bExecutable)
 {
-    void* buff = kmalloc(size, GFP_KERNEL);
+#ifdef BITS64
+    constexpr auto KMALLOC_FLAGS = 0xD0;
+#else
+    constexpr auto KMALLOC_FLAGS = GFP_KERNEL;
+#endif
 
-    if(bExecutable)
-        set_memory_x((uintptr_t)buff, size);
+    void* buff = kmalloc(size, KMALLOC_FLAGS);
+
+    if (bExecutable)
+    {
+        size += (unsigned long long)buff & 0xFFFull;
+        int nPages = ((size + 0xFFFull) & ~0xFFFull) >> 12;
+        void* buffPgAlign = (void*)(((unsigned long long)buff + 0xFFFull) & ~0xFFFull);
+        set_memory_x(buffPgAlign, nPages);
+    }
 
     return buff;
 }
@@ -107,9 +133,9 @@ void X86JMPCompute(void* outJmp, void* dst, void* src = nullptr)
     };
 
 #ifdef BITS32
-    *(uint32_t*)(jmpInst + 1) = ((int32_t)dst - (int32_t)src) - 5;
+    *(int32_t*)(jmpInst + 1) = ((int32_t)dst - (int32_t)src) - 5;
 #else
-    *(void**)(jmpInst + 6) = replace;
+    *(void**)(jmpInst + 6) = dst;
 #endif
 
     fslc_memcpy(outJmp, jmpInst, sizeof(jmpInst));
@@ -134,7 +160,10 @@ size_t HookReplaceBackupCreate(void* at, void** outBackup)
 
     void* backup = MemoryAlloc(backupLen + JMP_SZ);
     fslc_memcpy(backup, at, backupLen);
-    X86JMPCompute((char*)backup + backupLen, at, backup);
+
+    char* jmpBackStart = (char*)backup + backupLen;
+    char* atResume = (char*)at + backupLen;
+    X86JMPCompute(jmpBackStart, atResume, jmpBackStart);
 
     *outBackup = backup;
 
@@ -146,19 +175,25 @@ void HookDetourInstall(void* at, void* replace)
     X86HookDetourInstall(at, replace);
 }
 
-bool HookTrampInstall(void* at, void* replace, void** backup)
+size_t HookTrampInstall(void* at, void* replace, void** backup)
 {
-    if (HookReplaceBackupCreate(at, backup) == 0)
-        return false;
+    size_t backupLen = HookReplaceBackupCreate(at, backup);
+
+    if (!backupLen)
+        return backupLen;
 
     HookDetourInstall(at, replace);
 
-    return true;
+    return backupLen;
 }
 
-bool HookTrampRestore(void* at, void* backup)
+bool HookTrampRestore(void* at, void* backup, size_t backupLen)
 {
-    size_t backupLen = HookBackupLengthGet(backup);
+    if (backup == nullptr)
+        return false;
+
+    if(!backupLen)
+        backupLen = HookBackupLengthGet(backup);
 
     if (!backupLen)
         return false;

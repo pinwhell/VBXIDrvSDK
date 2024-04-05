@@ -1,9 +1,11 @@
 #pragma once
 
+#include <stdint.h>
+
 #define ERR_PTR(err) ((void*)err)
 
-#define MAX_ERRNO	4095
-#define IS_ERR_VALUE(x) ((unsigned long)(void *)(x) >= (unsigned long)-MAX_ERRNO)
+#define MAX_ERRNO	4095ull
+#define IS_ERR_VALUE(x) ((uintptr_t)(void *)(x) >= (uintptr_t)-MAX_ERRNO)
 
 #define	EPERM		 1	/* Operation not permitted */
 #define	ENOENT		 2	/* No such file or directory */

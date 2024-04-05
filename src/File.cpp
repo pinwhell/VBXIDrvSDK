@@ -131,7 +131,7 @@ size_t FileWrite(File* stream, const void *ptr, size_t size)
     if(stream->append == true)
         FileSeek(stream, 0, SEEK_END);
 
-    int writedBytes = kernel_write(stream->file, ptr, size, KernelFileSeekGet(stream->file));
+    uintptr_t writedBytes = kernel_write(stream->file, ptr, size, KernelFileSeekGet(stream->file));
 
     if(IS_ERR_VALUE(writedBytes))
         return 0;

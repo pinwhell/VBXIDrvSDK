@@ -6,20 +6,9 @@
 DECL(uintptr_t) mem_map;
 DECL(uintptr_t) current_task;
 
-__attribute__((always_inline)) uintptr_t readfsdword(uintptr_t Offset) {
-    uintptr_t value;
-    asm volatile("mov %%fs:%1, %0" : "=r" (value) : "m" (*(uintptr_t*)Offset));
-    return value;
-}
-
 uintptr_t get_task_parent(uintptr_t task)
 {
     return *(uintptr_t*)(task + TASK_STRUCT_PARENT_OFF);
-}
-
-uintptr_t get_current()
-{
-    return readfsdword(current_task);
 }
 
 uintptr_t get_stack(uintptr_t task)

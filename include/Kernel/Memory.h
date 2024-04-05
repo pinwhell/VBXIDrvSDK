@@ -54,13 +54,51 @@ void* MemoryAlloc(size_t size, bool bExecutable = true);
 size_t HookBackupLengthGet(void* at);
 void HookDetourInstall(void* at, void* replace);
 size_t HookReplaceBackupCreate(void* at, void** outBackup);
-bool HookTrampInstall(void* at, void* replace, void** backup);
-bool HookTrampRestore(void* at, void* backup);
+size_t HookTrampInstall(void* at, void* replace, void** backup);
+bool HookTrampRestore(void* at, void* backup, size_t backupLen = 0);
+
+#define HOOKTRAMP_INSTALL(at,replace,backup) HookTrampInstall((void*)at, (void*)replace, (void**)backup)
+#define HOOKTRAMP_RESTORE(at,backup) HookTrampRestore((void*)at, (void*)backup)
+#define HOOKTRAMP_RESTORELEN(at,backup,backupLen) HookTrampRestore((void*)at, (void*)backup, backupLen)
+
+template<typename T, typename K = void*>
+class HookTramp {
+public:
+	using _OriginalT = T;
+	using _ReplaceT = T;
+	using _BackupK = K;
+
+	HookTramp(_OriginalT original, _ReplaceT replace, _BackupK* backup = nullptr)
+		: mOriginal(original)
+		, mReplace(replace)
+		, mpBackup(backup == nullptr ? &mBackup : backup)
+	{
+		mBackupLength = HookTrampInstall((void*)mOriginal, (void*)mReplace, (void**)mpBackup);
+	}
+
+	~HookTramp()
+	{
+		HookTrampRestore((void*)mOriginal, (void*)mpBackup, mBackupLength);
+	}
+
+	operator bool() {
+		return !!mBackupLength;
+	}
+
+	_OriginalT mOriginal;
+	_ReplaceT mReplace;
+	_BackupK mBackup;
+	_BackupK* mpBackup;
+	size_t mBackupLength;
+};
 
 template<size_t maxCapacity>
 etl::string<maxCapacity> MemoryFromUserString(const char __user* at)
 {
-    etl::string<maxCapacity> result;
-    strncpy_from_user(result.data(), at, maxCapacity);
-    return result;
+	etl::string<maxCapacity> result;
+
+	if (strncpy_from_user(result.data(), at, maxCapacity) == -EFAULT)
+		result = "";
+
+	return result;
 }
