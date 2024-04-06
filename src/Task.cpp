@@ -1,5 +1,6 @@
 #include <Kernel/Task.h>
 #include <Kernel/Syms.h>
+#include <fslc_string.h>
 
 #ifdef BITS64
 __attribute__((always_inline)) uintptr_t __readgsqword(uintptr_t offset) {
@@ -31,7 +32,7 @@ __attribute__((always_inline)) uintptr_t __readfsdword(uintptr_t offset) {
 
 uintptr_t gCurrentTaskOff;
 
-task TaskCurrentGet()
+Task TaskCurrentGet()
 {
     if(!gCurrentTaskOff)
         gCurrentTaskOff = uintptr_t(kallsyms_lookup_name("current_task"));
@@ -41,4 +42,19 @@ task TaskCurrentGet()
 #else
     return __readfsdword(gCurrentTaskOff);
 #endif
+}
+
+REGPARAMDECL(char*) get_task_comm(char* comm, Task tsk);
+REGPARAMDECL(char*) __get_task_comm(char* comm, size_t len, Task tsk);
+
+TaskComm TaskCommGet(Task tsk)
+{
+    char result[16]{0};
+
+    if (get_task_comm)
+       get_task_comm(result, tsk);
+    else if (__get_task_comm)
+       __get_task_comm(result, sizeof(result), tsk);
+
+    return TaskComm(result);
 }

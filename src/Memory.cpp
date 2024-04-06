@@ -11,38 +11,36 @@ constexpr size_t JMP_SZ = 14;
 constexpr auto NMD_MODE = NMD_X86_MODE_64;
 #endif
 
-struct ScopedDisableInterupts {
-    ScopedDisableInterupts()
-    {
-        asm("cli");
-    }
-
-    ~ScopedDisableInterupts()
-    {
-        asm("sti");
-    }
-};
-
-CR0ScopedBackup::CR0ScopedBackup()
+ScopedCR0Backup::ScopedCR0Backup()
 {
     mPrevCR0 = CR0Read();
 }
 
-CR0ScopedBackup::~CR0ScopedBackup()
+ScopedCR0Backup::~ScopedCR0Backup()
 {
     CR0Write(mPrevCR0);
 }
 
-CR0WPDisableScoped::CR0WPDisableScoped()
+ScopedCR0WPDisable::ScopedCR0WPDisable()
 {
     uintptr_t disableWpMask = 0x00010000;
     disableWpMask = ~disableWpMask;
     CR0Write(CR0Read() & disableWpMask);
 }
 
+ScopedDisableInterupts::ScopedDisableInterupts()
+{
+    asm("cli");
+}
+
+ScopedDisableInterupts::~ScopedDisableInterupts()
+{
+    asm("sti");
+}
+
 void MemoryPatch(void* dst, const void* src, size_t len)
 {
-    CR0WPDisableScoped wpDisable;
+    ScopedCR0WPDisable wpDisable;
     ScopedDisableInterupts iruptsDisable;
 
     fslc_memcpy(dst, src, len);
@@ -95,8 +93,7 @@ void* MemoryAlloc(size_t size, bool bExecutable)
     {
         size += (unsigned long long)buff & 0xFFFull;
         int nPages = ((size + 0xFFFull) & ~0xFFFull) >> 12;
-        void* buffPgAlign = (void*)(((unsigned long long)buff + 0xFFFull) & ~0xFFFull);
-        set_memory_x(buffPgAlign, nPages);
+        set_memory_x((void*)((unsigned long long)buff & ~0xFFFull), nPages);
     }
 
     return buff;
@@ -108,8 +105,7 @@ void* operator new(size_t size)
 }
 
 void operator delete(void* ptr) noexcept {
-    // Must Implement!.
-    return;
+    kfree(ptr);
 }
 
 size_t HookBackupLengthGet(void* at)
@@ -202,51 +198,3 @@ bool HookTrampRestore(void* at, void* backup, size_t backupLen)
 
     return true;
 }
-
-// int detour32(void* from, void* to, size_t len)
-// {
-//     if(len < 5)
-//         return 0;
-
-//     unsigned char jmp_dst[] = {
-//         0xE9, 0x00, 0x00, 0x00, 0x00
-//     };
-
-//     int32_t rel_jmp_disp = (int32_t)to - (int32_t)from - 5;
-
-//     *(int32_t*)&(jmp_dst[1]) = rel_jmp_disp;
-
-//     patch(from, jmp_dst, 5);
-
-//     return 1;
-// }
-
-// int trampoline32(void* from, void* to, size_t len, void** out_original)
-// {
-//     if(len < 5)
-//         return 0;
-
-//     if(out_original != 0)
-//     {
-//         unsigned char* gateway = (unsigned char*)kmalloc(len + 5, 0xD0);
-
-//         if(gateway == 0)
-//             return 0;
-
-//         fslc_memcpy(gateway, from, len);
-
-//         unsigned char jmp_back[] = {
-//             0xE9, 0x00, 0x00, 0x00, 0x00
-//         };
-
-//         int32_t rel_jmp_back_disp = (int32_t)from - (int32_t)gateway - 5;
-
-//         *(int32_t*)&(jmp_back[1]) = (int32_t)rel_jmp_back_disp;
-
-//         fslc_memcpy(gateway + len, jmp_back, 5);
-
-//         *out_original = gateway;
-//     }
-
-//     return detour32(from, to, len);
-// }

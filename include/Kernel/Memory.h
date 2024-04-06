@@ -9,18 +9,23 @@ REGPARAMDECL(void) native_write_cr0(uintptr_t newCr0);
 #define CR0Read native_read_cr0
 #define CR0Write(x) native_write_cr0(x)
 
-struct CR0ScopedBackup {
-    CR0ScopedBackup();
-    ~CR0ScopedBackup();
+struct ScopedCR0Backup {
+	ScopedCR0Backup();
+    ~ScopedCR0Backup();
 
     uintptr_t mPrevCR0;
 };
 
-struct CR0WPDisableScoped {
+struct ScopedDisableInterupts {
+	ScopedDisableInterupts();
+	~ScopedDisableInterupts();
+};
 
-    CR0WPDisableScoped();
+struct ScopedCR0WPDisable {
 
-    CR0ScopedBackup mBackup;
+	ScopedCR0WPDisable();
+
+	ScopedCR0Backup mBackup;
 };
 
 void MemoryPatch(void* dst, const void* src, size_t len);
@@ -95,10 +100,7 @@ public:
 template<size_t maxCapacity>
 etl::string<maxCapacity> MemoryFromUserString(const char __user* at)
 {
-	etl::string<maxCapacity> result;
-
-	if (strncpy_from_user(result.data(), at, maxCapacity) == -EFAULT)
-		result = "";
-
-	return result;
+	char result[maxCapacity]{0};
+	strncpy_from_user(result, at, maxCapacity);
+	return etl::string<maxCapacity>(result);
 }

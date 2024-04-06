@@ -1,7 +1,11 @@
 #pragma once
 
 #include <stdint.h>
+#include <etl/string.h>
 
-using task = uintptr_t;
+using Task = uintptr_t;
 
-task TaskCurrentGet();
+using TaskComm = etl::string<16>;
+
+Task TaskCurrentGet();
+TaskComm TaskCommGet(Task task);

@@ -53,22 +53,6 @@ uintptr_t get_task_group_leader(uintptr_t task)
     return *(uintptr_t*)(task + TASK_STRUCT_GROUP_LEADER_OFF);
 }
 
-const char* get_task_name(uintptr_t task, char* name, size_t namesz)
-{
-    name[0] = '\0';
-
-    if(task == 0)
-        goto RET;
-
-    if(namesz < 16)
-        goto RET;
-
-    get_task_comm(name, (void*)task);
-    
-    RET:
-    return name;
-}
-
 int task_struct_self_or_acenstor_named(uintptr_t task_struct, const char* name)
 {
     uintptr_t last_task = 0;

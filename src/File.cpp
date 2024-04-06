@@ -166,7 +166,7 @@ int FilePrint(File* stream, const char *format, ...) {
     va_list args;
     va_start(args, format);
 
-    size_t formatSize = vsnprintf(NULL, 0, format, args);
+    int formatSize = vsnprintf(NULL, 0, format, args);
 
     if(formatSize == 0)
         return 0;

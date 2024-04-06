@@ -6,7 +6,6 @@ struct path;
 
 REGPARAMDECL(int) set_memory_x(void* addr, size_t numPages);
 REGPARAMDECL(void*) __kmalloc(uintptr_t sz, uintptr_t flags);
-REGPARAMDECL(char*) get_task_comm(char* out_task_comm, void* task_struct);
 REGPARAMDECL(long) strncpy_from_user(char *dest, const char __user *src, long count);
 REGPARAMDECL(void) kfree(const void*);
 REGPARAMDECL(uintptr_t)  _copy_from_user(void * to, const void __user * from, uintptr_t n);
