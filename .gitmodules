@@ -7,3 +7,6 @@
 [submodule "vendor/nmd"]
 	path = vendor/nmd
 	url = https://github.com/Nomade040/nmd
+[submodule "vendor/TBS"]
+	path = vendor/TBS
+	url = https://github.com/pinwhell/TBS

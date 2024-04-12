@@ -4,7 +4,7 @@ project(VBXIDrvSDK)
 
 option(BUILD_SAMPLES "Build Samples" FALSE)
 
-add_compile_options(-fno-exceptions -fno-stack-protector)
+add_compile_options(-U_FORTIFY_SOURCE -fno-threadsafe-statics -fno-exceptions -fno-stack-protector)
 
 add_subdirectory(vendor)
 add_subdirectory(src)
