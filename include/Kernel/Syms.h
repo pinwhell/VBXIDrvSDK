@@ -47,3 +47,6 @@ int task_struct_self_or_acenstor_named(uintptr_t task_struct, const char* name);
 int current_task_struct_self_or_acenstor_named(const char* name);
 const char* get_curr_task_name(char* name, size_t namesz);
 uintptr_t phys_to_page(uintptr_t phys_addr);
+
+
+#define KLOG_PRINT(...) printk(KERN_INFO __VA_ARGS__)
