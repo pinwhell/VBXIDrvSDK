@@ -30,7 +30,7 @@ void TestTBSScan()
                 KLOG_PRINT("TBS Working!!!");
 
             Pattern::Result result = state["TestPattern"];
-            printk(KERN_INFO "TBS Result %llx!!!", result);
+            KLOG_PRINT("TBS Result %llx!!!", result);
 }
 
 int SDKInit(uintptr_t entry)
