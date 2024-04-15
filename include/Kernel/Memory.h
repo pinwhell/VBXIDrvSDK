@@ -100,7 +100,7 @@ public:
 template<size_t maxCapacity>
 etl::string<maxCapacity> MemoryFromUserString(const char __user* at)
 {
-	char result[maxCapacity]{0};
-	strncpy_from_user(result, at, maxCapacity);
+	char result[maxCapacity];
+	strncpy_from_user(result, at, sizeof(result) - 1);
 	return etl::string<maxCapacity>(result);
 }

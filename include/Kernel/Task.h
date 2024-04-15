@@ -5,7 +5,7 @@
 
 using Task = uintptr_t;
 
-using TaskComm = etl::string<16>;
+using TaskComm = etl::string<17>;
 
 Task TaskCurrentGet();
 TaskComm TaskCommGet(Task task);

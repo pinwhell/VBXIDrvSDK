@@ -10,7 +10,7 @@ else()
     target_compile_definitions(VBXIDrvSDK PUBLIC BITS64)
 endif()
 
-target_compile_options(VBXIDrvSDK INTERFACE -U_FORTIFY_SOURCE -fno-threadsafe-statics -fno-exceptions -fno-stack-protector)
+target_compile_options(VBXIDrvSDK INTERFACE -mno-sse -fno-inline -U_FORTIFY_SOURCE -fno-threadsafe-statics -fno-exceptions -fno-stack-protector)
 
 # Forcing Linking No Discard of Entry/Exit Points
 add_library(VBXIDrvSDKEntry STATIC Entry.cxx)

@@ -49,7 +49,7 @@ REGPARAMDECL(char*) __get_task_comm(char* comm, size_t len, Task tsk);
 
 TaskComm TaskCommGet(Task tsk)
 {
-    char result[16]{0};
+    char result[18]{};
 
     if (get_task_comm)
        get_task_comm(result, tsk);
