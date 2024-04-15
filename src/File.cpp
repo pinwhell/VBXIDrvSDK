@@ -131,7 +131,8 @@ size_t FileWrite(File* stream, const void *ptr, size_t size)
     if(stream->append == true)
         FileSeek(stream, 0, SEEK_END);
 
-    uintptr_t writedBytes = kernel_write(stream->file, ptr, size, KernelFileSeekGet(stream->file));
+    uint64_t seek = KernelFileSeekGet(stream->file);
+    uintptr_t writedBytes = kernel_write(stream->file, ptr, size, (uintptr_t) & seek);
 
     if(IS_ERR_VALUE(writedBytes))
         return 0;
@@ -159,6 +160,9 @@ void FileRewind(File* file)
 }
 
 int FilePrint(File* stream, const char *format, ...) {
+
+    static int (KERN_CALL *_vsnprintf)(char* str, size_t size, const char* format, va_list ap) = (decltype(_vsnprintf)) kallsyms_lookup_name("vsnprintf");
+
     if (!stream || !format) {
         return -1; // Error: invalid stream or format string
     }
@@ -166,13 +170,13 @@ int FilePrint(File* stream, const char *format, ...) {
     va_list args;
     va_start(args, format);
 
-    int formatSize = vsnprintf(NULL, 0, format, args);
+    int formatSize = _vsnprintf(NULL, 0, format, args) + 1;
 
     if(formatSize == 0)
         return 0;
 
-    char* formatBuff = (char*)__builtin_alloca(formatSize * 2);
-    size_t formattedCount = vsnprintf(formatBuff, formatSize + 1, format, args);
+    char* formatBuff = (char*)__builtin_alloca(formatSize);
+    size_t formattedCount = _vsnprintf(formatBuff, formatSize, format, args);
 
     if(formattedCount < 1)
     {
@@ -180,7 +184,7 @@ int FilePrint(File* stream, const char *format, ...) {
         return formattedCount;
     }
 
-    if(FileWrite(stream, formatBuff, formatSize) < 1)
+    if(FileWrite(stream, formatBuff, formattedCount) < 1)
     {
         va_end(args);
         return -1;
