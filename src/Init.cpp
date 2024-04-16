@@ -1,14 +1,14 @@
 #include <cstdint>
 #include <Kernel/Syms.h>
-#include <TBS.hpp>
-
-using namespace TBS;
 
 // SDK Initialization
 
+extern int SDKKallsymsInit();
+
 int SDKInit(uintptr_t entry)
 {
-	KLOG_PRINT("SDKInitialized()");
+	if (int r = SDKKallsymsInit())
+		return r;
 
 	return 0;
 }
