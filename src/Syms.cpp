@@ -1,6 +1,6 @@
 #include <Kernel/Memory.h>
 #include <Kernel/Syms.h>
-#include <Kernel/Offs.h>
+#include <Kernel/Offsets.h>
 #include <fslc_string.h>
 
 DECL(uintptr_t) mem_map;
@@ -8,7 +8,7 @@ DECL(uintptr_t) current_task;
 
 uintptr_t get_task_parent(uintptr_t task)
 {
-    return *(uintptr_t*)(task + TASK_STRUCT_PARENT_OFF);
+    return *(uintptr_t*)(task + TASK_PARENT_OFF);
 }
 
 uintptr_t get_stack(uintptr_t task)
@@ -50,7 +50,7 @@ uintptr_t get_stack(uintptr_t task)
 
 uintptr_t get_task_group_leader(uintptr_t task)
 {
-    return *(uintptr_t*)(task + TASK_STRUCT_GROUP_LEADER_OFF);
+    return *(uintptr_t*)(task + TASK_GROUP_LEADER_OFF);
 }
 
 int task_struct_self_or_acenstor_named(uintptr_t task_struct, const char* name)

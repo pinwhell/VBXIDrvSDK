@@ -1,6 +1,8 @@
 #include <Kernel/Task.h>
 #include <Kernel/Syms.h>
 #include <fslc_string.h>
+#include <Kernel/KAllsyms.h>
+#include <Kernel/Offsets.h>
 
 #ifdef BITS32
 #define AX_REG "eax"
@@ -22,12 +24,11 @@ __attribute__((always_inline)) uintptr_t __readtlsword(uintptr_t offset) {
     return value;
 }
 
-uintptr_t gCurrentTaskOff;
+
 
 Task TaskCurrentGet()
 {
-    if(!gCurrentTaskOff)
-        gCurrentTaskOff = uintptr_t(kallsyms_lookup_name("current_task"));
+    static uintptr_t gCurrentTaskOff = KallsymLookupName<uintptr_t>("current_task");
 
     return __readtlsword(gCurrentTaskOff);
 }
@@ -65,12 +66,14 @@ REGPARAMDECL(char*) __get_task_comm(char* comm, size_t len, Task tsk);
 
 TaskComm TaskCommGet(Task tsk)
 {
-    char result[18]{};
+    char result[17]{};
 
-    if (get_task_comm)
-       get_task_comm(result, tsk);
-    else if (__get_task_comm)
-       __get_task_comm(result, sizeof(result), tsk);
+    memcpy(result, (char*)tsk + TASK_COMM_OFF, sizeof(result) - 1);
+
+    //if (get_task_comm)
+    //   get_task_comm(result, tsk);
+    //else if (__get_task_comm)
+    //   __get_task_comm(result, sizeof(result), tsk);
 
     return TaskComm(result);
 }

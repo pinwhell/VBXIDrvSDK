@@ -30,7 +30,6 @@ DECL(int) printk(const char * format, ...);
 DECL(void) dump_stack();
 DECL(int) sys_getpid();
 DECL(void**) sys_call_table;
-REGPARAMDECL(void*) kallsyms_lookup_name(const char* name);
 
 #define kmalloc __kmalloc
 #define copy_from_user _copy_from_user

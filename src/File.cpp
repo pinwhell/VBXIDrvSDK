@@ -2,7 +2,8 @@
 #include <Kernel/Syms.h>
 #include <Kernel/Decls.h>
 #include <Kernel/Libc.h>
-#include <Kernel/Offs.h>
+#include <Kernel/Offsets.h>
+#include <Kernel/KAllsyms.h>
 #include <fslc_string.h>
 #include <stdarg.h>
 
@@ -160,8 +161,7 @@ void FileRewind(File* file)
 }
 
 int FilePrint(File* stream, const char *format, ...) {
-
-    static int (KERN_CALL *_vsnprintf)(char* str, size_t size, const char* format, va_list ap) = (decltype(_vsnprintf)) kallsyms_lookup_name("vsnprintf");
+    static auto _vsnprintf = KallsymLookupName<int (KERN_CALL*)(char*, size_t, const char*, va_list)>("vsnprintf");
 
     if (!stream || !format) {
         return -1; // Error: invalid stream or format string
