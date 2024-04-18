@@ -6,47 +6,10 @@
 DECL(uintptr_t) mem_map;
 DECL(uintptr_t) current_task;
 
-uintptr_t get_task_parent(uintptr_t task)
-{
-    return *(uintptr_t*)(task + TASK_PARENT_OFF);
-}
-
 uintptr_t get_stack(uintptr_t task)
 {
     return *(uintptr_t*)(task + TASK_STACK_OFF);
 }
-
-// #define MAX_CALL_STACK 10
-
-// void traverse_call_stack(int(*callback)(uintptr_t ret_at, void* param), void* param)
-// {
-//     struct pt_regs* regs = get_curr_pt_regs();
-
-//     uintptr_t frame_ptr = regs->bp;
-//     uintptr_t ret_addr = regs->ip;
-
-//     if(callback(ret_addr, param) == 0)
-//         return;
-
-//     if(frame_ptr == 0)
-//         return;
-
-//     int count = 0;
-
-//     do {
-//         if(frame_ptr == 0)
-//             break;
-
-//         ret_addr = read_int_from_user(frame_ptr + 4);
-
-//         if(ret_addr == 0)
-//             break;
-
-//         if(callback(ret_addr, param) == 0)
-//             return;
-
-//     } while((frame_ptr = read_int_from_user(frame_ptr)) != 0 && count++ < MAX_CALL_STACK);
-// }
 
 uintptr_t get_task_group_leader(uintptr_t task)
 {

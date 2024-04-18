@@ -24,8 +24,6 @@ __attribute__((always_inline)) uintptr_t __readtlsword(uintptr_t offset) {
     return value;
 }
 
-
-
 Task TaskCurrentGet()
 {
     static uintptr_t gCurrentTaskOff = KallsymLookupName<uintptr_t>("current_task");
@@ -33,47 +31,60 @@ Task TaskCurrentGet()
     return __readtlsword(gCurrentTaskOff);
 }
 
+Task ProcessCurrentGet()
+{
+    return TaskGroupLeaderGet(TaskCurrentGet());
+}
+
 REGPARAMDECL(Task) find_task_by_vpid(size_t vpid);
 
 Task TaskByPidGet(size_t vpid)
 {
-    if (find_task_by_vpid)
-        return find_task_by_vpid(vpid);
-
-    return 0;
+    return find_task_by_vpid(vpid);
 }
 
-REGPARAMDECL(size_t)  __x64_sys_getppid();
-
-Task TaskCurrentGetParent()
+Task TaskGroupLeaderGet(Task tsk)
 {
-    if (__x64_sys_getppid)
-    {
-        size_t ppid = __x64_sys_getppid();
-        return TaskByPidGet(ppid);
-    }
-
-    return 0;
+    return *(Task*)(tsk + TASK_GROUP_LEADER_OFF);
 }
 
-//void TaskForEachParent(Task tsk, etl::delegate<bool(Task tsk)> callback)
-//{
-//    for(Task t = tsk;; tsk = )
-//}
+Task TaskParentGet(Task tsk)
+{
+    return *(Task*)(tsk + TASK_REAL_PARENT_OFF + sizeof(uintptr_t));
+}
 
-REGPARAMDECL(char*) get_task_comm(char* comm, Task tsk);
-REGPARAMDECL(char*) __get_task_comm(char* comm, size_t len, Task tsk);
+Task TaskGroupLeaderParentGet(Task tsk)
+{
+    tsk = TaskGroupLeaderGet(tsk); // Normalizing to group leader
+    tsk = TaskParentGet(tsk); // Falling back to creator of this task
+    return TaskGroupLeaderGet(tsk); // Finally, Normalizing to group leader of the creator task
+}
+
+void TaskForEachProcessAncestor(Task tsk, etl::delegate<bool(Task)> callback)
+{
+    tsk = TaskGroupLeaderGet(tsk); // Normalizing to group leader
+
+    for (Task curr = TaskGroupLeaderParentGet(tsk), last = tsk; curr != last; last = curr, curr = TaskGroupLeaderParentGet(curr))
+    {
+        if (!callback(curr))
+            break;
+    }
+}
+
+void TaskForEachTaskAncestor(Task tsk, etl::delegate<bool(Task)> callback)
+{
+    for (Task curr = TaskParentGet(tsk), last = tsk; curr != last; last = curr, curr = TaskParentGet(curr))
+    {
+        if (!callback(curr))
+            break;
+    }
+}
 
 TaskComm TaskCommGet(Task tsk)
 {
     char result[17]{};
 
     memcpy(result, (char*)tsk + TASK_COMM_OFF, sizeof(result) - 1);
-
-    //if (get_task_comm)
-    //   get_task_comm(result, tsk);
-    //else if (__get_task_comm)
-    //   __get_task_comm(result, sizeof(result), tsk);
 
     return TaskComm(result);
 }

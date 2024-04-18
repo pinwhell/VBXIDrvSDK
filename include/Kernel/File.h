@@ -46,4 +46,4 @@ string_path FilenameFromPathGet(const char* path);
 size_t KernelFileSeekGet(KernelFile file);
 void KernelFileSeekSet(KernelFile file, size_t pos);
 int KernelFileDeleteByName(const char* name);
-bool KernelFileExist(const char* userPath);
+bool KernelFileExist(const char __user * userPath);

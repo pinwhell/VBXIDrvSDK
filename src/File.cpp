@@ -288,7 +288,7 @@ int KernelFileDeleteByName(const char* name)
     return 0;
 }
 
-bool KernelFileExist(const char* userPath)
+bool KernelFileExist(const char __user * userPath)
 {
     struct path path;
 
