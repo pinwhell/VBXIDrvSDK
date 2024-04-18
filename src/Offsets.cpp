@@ -20,9 +20,9 @@ int SDKOffsetsInit()
 	if (!KERNEL_TEXT)
 		return 1;
 
-	TBS::State<> state(KERNEL_TEXT, KERNEL_TEXT + 16 * 1000 * 1000);
+	static TBS::State<> state(KERNEL_TEXT, KERNEL_TEXT + 16 * 1000 * 1000);
 
-	auto builderStopFirst = state
+	static auto builderStopFirst = state
 		.PatternBuilder()
 		.stopOnFirstMatch();
 
@@ -41,7 +41,7 @@ int SDKOffsetsInit()
 
 	if (auto proc = KallsymLookupName<uintptr_t>("walk_process_tree"))
 	{
-		auto builder = builderStopFirst
+		static auto builder = builderStopFirst
 			.Clone()
 			.setUID("TGLO")
 			.setScanStart(proc)
@@ -64,7 +64,7 @@ int SDKOffsetsInit()
 
 	if (auto proc = getTaskComm)
 	{
-		auto builder = builderStopFirst
+		static auto builder = builderStopFirst
 			.Clone()
 			.setUID("TCO")
 			.setScanStart(proc)
@@ -84,7 +84,7 @@ int SDKOffsetsInit()
 
 	if (auto proc = KallsymLookupName<uintptr_t>("ptrace_traceme"))
 	{
-		auto builder = builderStopFirst
+		static auto builder = builderStopFirst
 			.Clone()
 			.setUID("TRPO")
 			.setScanStart(proc)
