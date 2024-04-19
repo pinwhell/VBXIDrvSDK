@@ -3,7 +3,6 @@
 #include <TBS.hpp>
 #include <Kernel/Syms.h>
 
-Offset KERNEL_TEXT;
 Offset TASK_STACK_OFF;
 Offset TASK_COMM_OFF;
 Offset TASK_REAL_PARENT_OFF;
@@ -13,93 +12,130 @@ Offset FILE_FOFFSET;
 Offset DENTRY_PARENT;
 Offset DENTRY_INODE;
 
+template<typename DescBuilderT>
+bool TBSDescBulderSymScanRangeSet(DescBuilderT& builder, const char* symName)
+{
+	auto proc = KallsymLookupName<uintptr_t>(symName);
+
+	if (!proc)
+		return false;
+
+	builder
+		.setScanStart(proc)
+		.setScanEnd(KAllsymSymbolSizeGet(proc), true);
+
+	return true;
+}
+
 int SDKOffsetsInit()
 {
-	KERNEL_TEXT = KallsymLookupName<Offset>("_text");
-
-	if (!KERNEL_TEXT)
-		return 1;
-
-	static TBS::State<> state(KERNEL_TEXT, KERNEL_TEXT + 16 * 1000 * 1000);
-
+	static TBS::State<> state(KERNEL_TEXT, KERNEL_TEXT + 16 * 1024 * 1024);
+	
 	static auto builderStopFirst = state
 		.PatternBuilder()
 		.stopOnFirstMatch();
 
 	using Result = TBS::Pattern::Result;
 
-	// Template
-	/*if (auto proc = KallsymLookupName<uintptr_t>("....."))
 	{
-		auto builder = builderStopFirst
+		static auto builder = builderStopFirst
 			.Clone()
-			.setUID("...")
-			.setScanStart(proc)
-			.setScanEnd(KAllsymSymbolSizeGet(proc), true);
+			.setUID("TGLO");
+
+		if (TBSDescBulderSymScanRangeSet(builder, "do_notify_parent"))
+		{
+			state.AddPattern(
+				builder
+				.Clone()
+				.setPattern("48 ? ? ? ? ? ? 75 ? 48")
+				.AddTransformer([](auto& _, Result r) {
+					return *(uint32_t*)(r + 3);
+					})
+				.Build()
+			);
+
+			state.AddPattern(
+				builder
+				.Clone()
+				.setPattern("3b ? ? ? ? ? 75 ? 8b")
+				.AddTransformer([](auto& _, Result r) {
+					return *(uint32_t*)(r + 2);
+					})
+				.Build()
+			);
+		}
+		else return 1;
 	}
-	else return 1;*/
 
-	if (auto proc = KallsymLookupName<uintptr_t>("walk_process_tree"))
 	{
 		static auto builder = builderStopFirst
 			.Clone()
-			.setUID("TGLO")
-			.setScanStart(proc)
-			.setScanEnd(KAllsymSymbolSizeGet(proc), true);
+			.setUID("TCO");
 
-		state.AddPattern(
-			builder
-			.Clone()
-			.setPattern("E8 ? ? ? ? 49 ? ? ? ? ? ? ? 49")
-			.AddTransformer([](auto& _, Result r) {
-				return *(uint32_t*)(r + 9);
-				})
-			.Build()
-		);
-	} else return 1;
+		if (TBSDescBulderSymScanRangeSet(builder, "get_task_comm") ||
+			TBSDescBulderSymScanRangeSet(builder, "__get_task_comm"))
+		{
+			state.AddPattern(
+				builder
+				.Clone()
+				.setPattern("49 ? ? ? ? ? ? 4C")
+				.AddTransformer([](auto& _, Result r) {
+					return *(uint32_t*)(r + 3);
+					})
+				.Build()
+						);
 
-	auto getTaskComm = KallsymLookupName<uintptr_t>("__get_task_comm");
-	if(!getTaskComm)
-		getTaskComm = KallsymLookupName<uintptr_t>("get_task_comm");
-
-	if (auto proc = getTaskComm)
-	{
-		static auto builder = builderStopFirst
-			.Clone()
-			.setUID("TCO")
-			.setScanStart(proc)
-			.setScanEnd(KAllsymSymbolSizeGet(proc), true);
-
-		state.AddPattern(
-			builder
-			.Clone()
-			.setPattern("49 ? ? ? ? ? ? 4C")
-			.AddTransformer([](auto& _, Result r) {
-				return *(uint32_t*)(r + 3);
-				})
-			.Build()
-		);
+			state.AddPattern(
+				builder
+				.Clone()
+				.setPattern("8d ? ? ? ? ? b9")
+				.AddTransformer([](auto& _, Result r) {
+					return *(uint32_t*)(r + 2);
+					})
+				.Build()
+						);
+		}
+		else return 1;
 	}
-	else return 1;
 
-	if (auto proc = KallsymLookupName<uintptr_t>("ptrace_traceme"))
 	{
 		static auto builder = builderStopFirst
 			.Clone()
-			.setUID("TRPO")
-			.setScanStart(proc)
-			.setScanEnd(KAllsymSymbolSizeGet(proc), true);
+			.setUID("TRPO");
 
-		state.AddPattern(
-			builder
-			.Clone()
-			.setPattern("48 ? ? ? ? ? ? f6 ? ? ? 75")
-			.AddTransformer([](auto& _, Result r) {
-				return *(uint32_t*)(r + 3);
-				})
-			.Build()
-		);
-	}	
+		int finding = 0;
+
+		if (TBSDescBulderSymScanRangeSet(builder, "ptrace_traceme"))
+		{
+			finding++;
+			state.AddPattern(
+				builder
+				.Clone()
+				.setPattern("48 ? ? ? ? ? ? f6 ? ? ? 75")
+				.AddTransformer([](auto& _, Result r) {
+					return *(uint32_t*)(r + 3);
+					})
+				.Build()
+			);
+		}
+
+		if (TBSDescBulderSymScanRangeSet(builder, "sys_getppid"))
+		{
+			finding++;
+			state.AddPattern(
+				builder
+				.Clone()
+				.setPattern("64 ? ? ? ? ? 8b ? ? ? ? ? 8b")
+				.AddTransformer([](auto& _, Result r) {
+					return *(uint32_t*)(r + 8);
+					})
+				.Build()
+			);
+		}
+
+		if (!finding)
+			return false;
+	}
 
 	if (!TBS::Scan(state))
 		return 2;

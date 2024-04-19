@@ -4,11 +4,26 @@
 #include <etl/string.h>
 #include <BidirectionalMap.h>
 #include <Kernel/Syms.h>
+#include <TBS.hpp>
+
+size_t KERNEL_TEXT;
+uint32_t* gSymbolTable;
 
 #define KSYM_NAME_LEN 128
 #define KSOL_SYMBOL_COUNT_EDGE 105000
 
-REGPARAMDECL(unsigned long) kallsyms_sym_address(int idx);
+REGPARAMDECL(uintptr_t) kallsyms_sym_address(int idx);
+
+uintptr_t KAllsymSymbolAddress(int index)
+{
+	if (&kallsyms_sym_address)
+		return kallsyms_sym_address(index);
+
+	if (gSymbolTable == nullptr)
+		return 0;
+
+	return KERNEL_TEXT + gSymbolTable[index];
+}
 
 BidirectionalMap<int, uintptr_t, 4096> gOffsetEntryCache;
 
@@ -23,7 +38,7 @@ int KAllsymSymbolIndexLookupByEntry(uintptr_t entry) {
 
 	while (low <= high) {
 		int mid = low + (high - low) / 2;
-		uintptr_t currSym = kallsyms_sym_address(mid);
+		uintptr_t currSym = KAllsymSymbolAddress(mid);
 
 		if (currSym == entry) {
 			if (gOffsetEntryCache.forward.capacity() > 0) {
@@ -65,7 +80,7 @@ size_t KAllsymSymbolSizeGet(uintptr_t symEntry, size_t defSize)
 
 	}
 
-	auto result = kallsyms_sym_address(nextSymIndex) - symEntry;
+	auto result = KAllsymSymbolAddress(nextSymIndex) - symEntry;
 
 	if (gSymSizes.available() > 0)
 		gSymSizes[symEntry] = result;
@@ -83,5 +98,41 @@ size_t KAllsymSymbolSizeGet(const char* symbolName, size_t defSize)
 	return KAllsymSymbolSizeGet(entry, defSize);
 }
 
+bool LookupNameInitialize()
+{
+	if (&kallsyms_sym_address != nullptr)
+		return true;
+
+	TBS::State<> state(KERNEL_TEXT, KERNEL_TEXT + 16 * 1024 * 1024);
+
+	state.AddPattern(
+		state.PatternBuilder()
+		.setUID("LNST") // Lookup Name Symbol Table
+		.setPattern("03 04 ? ? ? ? ? 83 ec ? 5b 5e 5f 5d")
+		.AddTransformer([](auto& _, auto result) {
+			return *(uint32_t*)(result + 3);
+			})
+		.stopOnFirstMatch()
+		.Build()
+	);
+
+	if (!TBS::Scan(state))
+		return false;
+
+	gSymbolTable = (uint32_t*)(TBS::Pattern::Result)state["LNST"];
+
+	return true;
+}
+
 int SDKKallsymsInit()
-{return 0;}
+{
+	KERNEL_TEXT = KallsymLookupName<size_t>("_text");
+
+	if (!KERNEL_TEXT)
+		return 1;
+
+	if (!LookupNameInitialize())
+		return 2;
+	
+	return 0;
+}

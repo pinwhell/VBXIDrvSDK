@@ -7,16 +7,18 @@
 #ifdef BITS32
 #define AX_REG "eax"
 #define TLS_REG "fs"
+#define OPERAND ""
 #elif BITS64
 #define AX_REG "rax"
 #define TLS_REG "gs"
+#define OPERAND "q"
 #endif
 
 __attribute__((always_inline)) uintptr_t __readtlsword(uintptr_t offset) {
     uintptr_t value;
     asm volatile(
-        "movq %1, %%" AX_REG "\n"          // Move the offset to %rdi (first argument register)
-        "movq %%" TLS_REG ":(%%" AX_REG "), %0"     // Access the value at gs:offset and move it to value
+        "mov" OPERAND " %1, %%" AX_REG "\n"          // Move the offset to %rdi (first argument register)
+        "mov" OPERAND " %%" TLS_REG ":(%%" AX_REG "), %0"     // Access the value at gs:offset and move it to value
         : "=r" (value)              // Output: value is written to a register
         : "r" (offset)              // Input: offset is read from a register
         : "%" AX_REG                    // Clobbered registers
