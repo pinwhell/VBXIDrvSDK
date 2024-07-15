@@ -29,10 +29,14 @@ bool TBSDescBulderSymScanRangeSet(DescBuilderT& builder, const char* symName)
 
 int SDKOffsetsInit()
 {
-	static TBS::State<> state(KERNEL_TEXT, KERNEL_TEXT + 16 * 1024 * 1024);
-	
-	static auto builderStopFirst = state
-		.PatternBuilder()
+	auto stateStrg = etl::unique_ptr<TBS::State<>>(new TBS::State<>(KERNEL_TEXT, KERNEL_TEXT + 16 * 1024 * 1024));
+	auto& state = *stateStrg;
+
+	auto builderStopFirstStrg = etl::unique_ptr<TBS::State<>::DescriptionBuilderT>(
+		new TBS::State<>::DescriptionBuilderT(std::move(state.PatternBuilder()))
+	);
+
+	auto builderStopFirst = (*builderStopFirstStrg)
 		.stopOnFirstMatch();
 
 	using Result = TBS::Pattern::Result;

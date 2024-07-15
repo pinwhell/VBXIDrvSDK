@@ -2,6 +2,7 @@
 
 #include <Kernel/Syms.h>
 #include <etl/string.h>
+#include <etl/memory.h>
 
 REGPARAMDECL(uintptr_t) native_read_cr0();
 REGPARAMDECL(void) native_write_cr0(uintptr_t newCr0);
@@ -98,9 +99,10 @@ public:
 };
 
 template<size_t maxCapacity>
-etl::string<maxCapacity> MemoryFromUserString(const char __user* at)
+etl::unique_ptr<etl::string<maxCapacity>> MemoryFromUserString(const char __user* at)
 {
-	char result[maxCapacity];
-	strncpy_from_user(result, at, sizeof(result) - 1);
-	return etl::string<maxCapacity>(result);
+	etl::unique_ptr<char[]> tmpArr(new char[maxCapacity]);
+	strncpy_from_user(tmpArr.get(), at, maxCapacity - 1);
+	tmpArr.get()[maxCapacity - 1] = 0;
+	return etl::unique_ptr<etl::string<maxCapacity>>(new etl::string<maxCapacity>(tmpArr.get()));
 }

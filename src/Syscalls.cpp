@@ -4,7 +4,7 @@
 #include <etl/unordered_map.h>
 #include <etl/unordered_set.h>
 
-DECL(const void**) sys_call_table;
+DECL(const void*) sys_call_table;
 
 etl::unordered_map<int, void*, 256> gSyscallBackup;
 etl::unordered_set<int, 256> gSyscallReplaced;
@@ -17,11 +17,10 @@ bool SyscallReplace(int syscallId, const void* replace, void** origp)
     gSyscallReplaced.insert(syscallId);
 
     ScopedCR0WPDisable wpDisable;
-    ScopedDisableInterupts irupsDisable;
-    void* orig = const_cast<void*>(sys_call_table[syscallId]);
+    void* orig = const_cast<void*>((&sys_call_table)[syscallId]);
 
     gSyscallBackup[syscallId] = orig;
-    sys_call_table[syscallId] = replace;
+    (&sys_call_table)[syscallId] = replace;
 
     if (origp)
         *origp = orig;
@@ -35,9 +34,8 @@ bool SyscallRestore(int syscallId)
         return false;
 
     ScopedCR0WPDisable wpDisable;
-    ScopedDisableInterupts irupsDisable;
 
-    sys_call_table[syscallId] = gSyscallBackup[syscallId];
+    (&sys_call_table)[syscallId] = gSyscallBackup[syscallId];
     gSyscallReplaced.erase(syscallId);
 
     return true;

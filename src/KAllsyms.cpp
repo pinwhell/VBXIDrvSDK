@@ -103,7 +103,8 @@ bool LookupNameInitialize()
 	if (&kallsyms_sym_address != nullptr)
 		return true;
 
-	TBS::State<> state(KERNEL_TEXT, KERNEL_TEXT + 16 * 1024 * 1024);
+	auto stateStrg = etl::unique_ptr<TBS::State<>>(new TBS::State<>(KERNEL_TEXT, KERNEL_TEXT + 16 * 1024 * 1024));
+	auto& state = *stateStrg;
 
 	state.AddPattern(
 		state.PatternBuilder()
