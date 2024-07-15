@@ -1,9 +1,23 @@
 #pragma once
 
-#ifdef BITS32
-#include <Kernel/UniSTD32.h>
-#else
-#include <Kernel/UniSTD64.h>
-#endif
+bool SyscallReplace(int syscallId, const void* replace, void** origp);
+bool SyscallRestore(int syscallId);
 
-void replace_syscall(int syscall_id, const void* _new, void** out_old);
+template<typename TReplace, typename TBackup>
+class SyscallReplaceScoped {
+	inline SyscallReplaceScoped(int syscallId, TReplace replace, TBackup* orig = nullptr)
+		: mSyscallId(syscallId)
+	{
+		SyscallReplace(mSyscallId, (const void*)replace, (void**)orig);
+	}
+
+	inline ~SyscallReplaceScoped()
+	{
+		SyscallRestore(mSyscallId);
+	}
+
+	int mSyscallId;
+};
+
+#define SYSCALL_REPLACE(nr, with, orig) SyscallReplace((nr), (const void*)(with), (void**)(orig))
+#define SYSCALL_RESTORE(nr) SyscallRestore(nr)

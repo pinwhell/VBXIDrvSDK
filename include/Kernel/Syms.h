@@ -29,7 +29,6 @@ REGPARAMDECL(int)  user_path_at_empty(int dfd, const char __user *name, unsigned
 DECL(int) printk(const char * format, ...);
 DECL(void) dump_stack();
 DECL(int) sys_getpid();
-DECL(void**) sys_call_table;
 
 #define kmalloc __kmalloc
 #define copy_from_user _copy_from_user

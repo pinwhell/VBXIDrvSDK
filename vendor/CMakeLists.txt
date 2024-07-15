@@ -2,7 +2,7 @@ set(NO_STL ON)
 
 add_subdirectory(etl)
 
-set(ENABLE_STANDARD_SYMNAMES ON)
+set(ENABLE_STANDARD_SYMNAMES OFF)
 
 add_subdirectory(FsLibc)
 

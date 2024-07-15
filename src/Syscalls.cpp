@@ -1,15 +1,44 @@
 #include <Kernel/Syms.h>
 #include <Kernel/Syscalls.h>
 #include <Kernel/Memory.h>
+#include <etl/unordered_map.h>
+#include <etl/unordered_set.h>
 
-// void replace_syscall(int syscall_id, const void* _new, void** out_old)
-// {
-//     disable_write_prot();
+DECL(const void**) sys_call_table;
 
-//     if( out_old != 0)
-//         *out_old = sys_call_table[syscall_id];
+etl::unordered_map<int, void*, 256> gSyscallBackup;
+etl::unordered_set<int, 256> gSyscallReplaced;
 
-//     sys_call_table[syscall_id] = (void*)_new;    
+bool SyscallReplace(int syscallId, const void* replace, void** origp)
+{
+    if (gSyscallReplaced.count(syscallId))
+        return false; // Already Replaced
 
-//     enable_write_prot();
-// }
+    gSyscallReplaced.insert(syscallId);
+
+    ScopedCR0WPDisable wpDisable;
+    ScopedDisableInterupts irupsDisable;
+    void* orig = const_cast<void*>(sys_call_table[syscallId]);
+
+    gSyscallBackup[syscallId] = orig;
+    sys_call_table[syscallId] = replace;
+
+    if (origp)
+        *origp = orig;
+
+    return true;
+}
+
+bool SyscallRestore(int syscallId)
+{
+    if (gSyscallBackup.find(syscallId) == gSyscallBackup.end())
+        return false;
+
+    ScopedCR0WPDisable wpDisable;
+    ScopedDisableInterupts irupsDisable;
+
+    sys_call_table[syscallId] = gSyscallBackup[syscallId];
+    gSyscallReplaced.erase(syscallId);
+
+    return true;
+}
