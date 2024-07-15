@@ -34,29 +34,22 @@
 #define SEEK_CUR    1   // Set file offset to current plus offset
 #define SEEK_END    2   // Set file offset to EOF plus offset
 
-fd __to_fd(uintptr_t v)
+REGPARAMDECL(uintptr_t) fget(unsigned int fd);
+REGPARAMDECL(void) fput(uintptr_t file);
+
+ScopedFileFromFd::ScopedFileFromFd(int fd)
 {
-    return { (uintptr_t)(v & ~3), v & 3 };
+    mFile = fget(fd);
 }
 
-fd fdget(uintptr_t fd)
-{
-    return __to_fd(__fdget(fd));
-}
-
-ScopedFd::ScopedFd(int fd)
-{
-    mFd = fdget(fd);
-}
-
-ScopedFd::~ScopedFd()
+ScopedFileFromFd::~ScopedFileFromFd()
 {
     if (*this)
-        fput(mFd.file);
+        fput(mFile);
 }
 
-ScopedFd::operator bool() {
-    return mFd.file != 0;
+ScopedFileFromFd::operator bool() {
+    return mFile != 0;
 }
 
 struct File {
@@ -230,30 +223,32 @@ size_t FileSizeGet(File* file)
     return file_size;
 }
 
-string_path KernelFilePathGet(KernelFile file)
+etl::unique_ptr<string_path> KernelFilePathGet(KernelFile file)
 {
-    string_path result;
-    file_path(file, result.data(), result.size());
-    return result;
+    etl::unique_ptr<char[]> pathStrg(new char[MAX_FILE_PATH]);
+    memset(pathStrg.get(), 0x0, MAX_FILE_PATH);
+    const char* path = file_path(file, pathStrg.get(), MAX_FILE_PATH);
+    pathStrg.get()[MAX_FILE_PATH - 1] = 0;
+    return etl::unique_ptr<string_path>(new string_path(path));
 }
 
-string_path FdPathGet(int fd)
+etl::unique_ptr<string_path> FdPathGet(int fd)
 {
-    ScopedFd sfd(fd);
+    ScopedFileFromFd sfd(fd);
 
-    if (!sfd) return 0;
+    if (!sfd) return etl::unique_ptr<string_path>(new string_path(""));
 
-    return KernelFilePathGet(sfd.mFd.file);
+    return KernelFilePathGet(sfd.mFile);
 }
 
-string_path FilenameFromPathGet(const char* path)
+etl::unique_ptr<string_path> FilenameFromPathGet(const char* path)
 {
     const char* lastSlash = fslc_strrstr(path, "/");
 
     if (lastSlash == nullptr)
-        return path;
+        return etl::unique_ptr<string_path>(new string_path(path));
 
-    return lastSlash + 1;
+    return etl::unique_ptr<string_path>(new string_path(lastSlash + 1));
 }
 
 size_t KernelFileSeekGet(KernelFile file) {

@@ -132,19 +132,3 @@ typedef unsigned int gfp_t;
 #define GFP_TRANSHUGE_LIGHT	((GFP_HIGHUSER_MOVABLE | __GFP_COMP | \
 			 __GFP_NOMEMALLOC | __GFP_NOWARN) & ~__GFP_RECLAIM)
 #define GFP_TRANSHUGE	(GFP_TRANSHUGE_LIGHT | __GFP_DIRECT_RECLAIM)
-
-typedef struct _linux_dirent {
-unsigned long  d_ino;     /* Inode number */
-unsigned long  d_off;     /* Offset to next linux_dirent */
-unsigned short d_reclen;  /* Length of this linux_dirent */
-char           d_name[1];  /* Filename (null-terminated) */
-
-} linux_dirent;
-
-typedef struct _linux_dirent64 {
-	unsigned long long		d_ino;
-	long long		d_off;
-	unsigned short	d_reclen;
-	unsigned char	d_type;
-	char		d_name[1];
-} linux_dirent64;

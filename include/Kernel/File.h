@@ -4,30 +4,23 @@
 
 constexpr size_t MAX_FILE_PATH = 4096;
 
-struct fd {
-	uintptr_t file;
-	uintptr_t flags;
-};
-
 struct path {
 	uintptr_t mnt;
 	uintptr_t dentry;
 };
 
-fd fdget(uintptr_t fd);
-
 struct File;
 using KernelFile = uintptr_t;
-using string_path = etl::string<MAX_FILE_PATH>;
+using string_path = typename etl::string<MAX_FILE_PATH>;
 
-struct ScopedFd {
+struct ScopedFileFromFd {
 
-	ScopedFd(int fd);
-	~ScopedFd();
+	ScopedFileFromFd(int fd);
+	~ScopedFileFromFd();
 
 	operator bool();
 
-	struct fd mFd;
+	KernelFile mFile;
 };
 
 File* FileOpen(const char* path, const char* mode, bool append = false, bool truncate = false);
@@ -40,9 +33,9 @@ void FileRewind(File* file);
 void FileClose(File* file);
 size_t FileSizeGet(File* file);
 
-string_path KernelFilePathGet(KernelFile file);
-string_path FdPathGet(int fd);
-string_path FilenameFromPathGet(const char* path);
+etl::unique_ptr<string_path> KernelFilePathGet(KernelFile file);
+etl::unique_ptr<string_path> FdPathGet(int fd);
+etl::unique_ptr<string_path> FilenameFromPathGet(const char* path);
 size_t KernelFileSeekGet(KernelFile file);
 void KernelFileSeekSet(KernelFile file, size_t pos);
 int KernelFileDeleteByName(const char* name);

@@ -9,7 +9,7 @@ REGPARAMDECL(void*) __kmalloc(uintptr_t sz, uintptr_t flags);
 REGPARAMDECL(long) strncpy_from_user(char *dest, const char __user *src, long count);
 REGPARAMDECL(void) kfree(const void*);
 REGPARAMDECL(uintptr_t)  _copy_from_user(void * to, const void __user * from, uintptr_t n);
-REGPARAMDECL(uintptr_t)  copy_to_user(void __user * to,const void * from, uintptr_t n);
+REGPARAMDECL(uintptr_t)  _copy_to_user(void __user * to,const void * from, uintptr_t n);
 REGPARAMDECL(char *)  d_path(uintptr_t path, char *buf, int buflen);
 REGPARAMDECL(void)  seq_puts(uintptr_t m, const char* s);
 REGPARAMDECL(uintptr_t)  __fdget(uintptr_t fd);
@@ -32,6 +32,7 @@ DECL(int) sys_getpid();
 
 #define kmalloc __kmalloc
 #define copy_from_user _copy_from_user
+#define copy_to_user _copy_to_user
 
 uintptr_t get_current();
 uintptr_t get_stack(uintptr_t task);
