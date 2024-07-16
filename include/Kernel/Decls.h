@@ -17,7 +17,7 @@
 #define CPP_ASMLINKAGE 
 #endif
 
-#define asmlinkage CPP_ASMLINKAGE /*__attribute__((syscall_linkage))*/
+#define asmlinkage __attribute__((regparm(0)))
 
 typedef unsigned int gfp_t;
 
