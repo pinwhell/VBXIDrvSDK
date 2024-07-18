@@ -154,36 +154,32 @@ void FileRewind(File* file)
 }
 
 int FilePrint(File* stream, const char *format, ...) {
-    static auto _vsnprintf = KallsymLookupName<int (KERN_CALL*)(char*, size_t, const char*, va_list)>("vsnprintf");
 
-    if (!stream || !format) {
+    if (!stream || !format) 
         return -1; // Error: invalid stream or format string
-    }
 
-    va_list args;
-    va_start(args, format);
+    static auto _vsnprintf = KallsymLookupName<int (KERN_CALL*)(char*, size_t, const char*, va_list)>("vsnprintf");
+    
+    va_list args1;
+    va_start(args1, format);
+    int formatSize = _vsnprintf(NULL, 0, format, args1) + 1;
+    va_end(args1);
 
-    int formatSize = _vsnprintf(NULL, 0, format, args) + 1;
 
-    if(formatSize == 0)
+    if (formatSize == 0)
         return 0;
 
     char* formatBuff = (char*)__builtin_alloca(formatSize);
-    size_t formattedCount = _vsnprintf(formatBuff, formatSize, format, args);
+    va_list args2;
+    va_start(args2, format);
+    size_t formattedCount = _vsnprintf(formatBuff, formatSize, format, args2);
+    va_end(args2);
 
     if(formattedCount < 1)
-    {
-        va_end(args);
         return formattedCount;
-    }
 
     if(FileWrite(stream, formatBuff, formattedCount) < 1)
-    {
-        va_end(args);
         return -1;
-    }
-
-    va_end(args);
 
     return formattedCount;
 }

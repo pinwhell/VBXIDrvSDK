@@ -1,5 +1,6 @@
 #include <Kernel/Memory.h>
 #include <Kernel/Syms.h>
+#include <Kernel/Log.h>
 #include <fslc_string.h>
 #include <nmd_assembly.h>
 
@@ -101,12 +102,42 @@ void* MemoryAlloc(size_t size, bool bExecutable)
 
 void* operator new(size_t size)
 {
-    return MemoryAlloc(size);
+    void* r = kmalloc(size, GFP_KERNEL);
+
+    if (!r)
+    {
+        KLOG_PRINT("kmalloc failed in operator new\n");
+
+        while (true)
+            (void)0;
+    }
+
+    return r;
+}
+
+void* operator new[](size_t size)
+{
+    void* r = kmalloc(size, GFP_KERNEL);
+
+    if (!r)
+    {
+        KLOG_PRINT("kmalloc failed in operator new\n");
+
+        while (true)
+            (void)0;
+    }
+
+    return r;
 }
 
 void operator delete(void* ptr) noexcept {
     kfree(ptr);
 }
+
+void operator delete[](void* ptr) noexcept {
+    kfree(ptr);
+}
+
 
 size_t HookBackupLengthGet(void* at)
 {

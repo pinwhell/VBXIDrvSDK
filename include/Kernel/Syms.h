@@ -26,7 +26,6 @@ REGPARAMDECL(uintptr_t)  dget_parent(uintptr_t dentry);
 REGPARAMDECL(void)  dput(uintptr_t dentry);
 REGPARAMDECL(void)  path_put(uintptr_t path);
 REGPARAMDECL(int)  user_path_at_empty(int dfd, const char __user *name, unsigned flags, void* path, int *empty);
-DECL(int) printk(const char * format, ...);
 DECL(void) dump_stack();
 DECL(int) sys_getpid();
 
@@ -47,5 +46,16 @@ int current_task_struct_self_or_acenstor_named(const char* name);
 const char* get_curr_task_name(char* name, size_t namesz);
 uintptr_t phys_to_page(uintptr_t phys_addr);
 
+template<typename TObj, typename TAddr>
+inline TObj FromUserRead(TAddr at)
+{
+	TObj obj{};
+	copy_from_user((void*)&obj, (const void*)at, sizeof(TObj));
+	return obj;
+}
 
-#define KLOG_PRINT(...) printk(KERN_INFO __VA_ARGS__)
+template<typename TObj, typename TAddr>
+inline void ToUserWrite(TAddr to, const TObj& obj)
+{
+	copy_to_user((void*)to, (const void*)&obj, sizeof(TObj));
+}

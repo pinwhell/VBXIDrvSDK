@@ -10,7 +10,20 @@ else()
     target_compile_definitions(VBXIDrvSDK PUBLIC BITS64)
 endif()
 
-target_compile_options(VBXIDrvSDK INTERFACE -mno-sse -fno-inline -U_FORTIFY_SOURCE -fno-threadsafe-statics -fno-exceptions -fno-stack-protector)
+target_compile_options(VBXIDrvSDK INTERFACE ${BUILD_FLAGS})
+
+# Normalizing Log File Enabled for C Macros
+
+if(VBXIDRVSDK_LOGFILE_ENABLE)
+target_compile_definitions(VBXIDrvSDK 
+    PUBLIC VBXIDRVSDK_LOGFILE_ENABLE
+    PUBLIC VBXIDRVSDK_LOGFOLDER="${VBXIDRVSDK_LOGFOLDER}" 
+    PUBLIC VBXIDRVSDK_LOGFILENAME="${VBXIDRVSDK_LOGFILENAME}")
+endif()
+
+if(VBXIDRVSDK_SYSLOG_ENABLE)
+target_compile_definitions(VBXIDrvSDK PUBLIC VBXIDRVSDK_SYSLOG_ENABLE)
+endif()
 
 # Forcing Linking No Discard of Entry/Exit Points
 add_library(VBXIDrvSDKEntry STATIC Entry.cxx)

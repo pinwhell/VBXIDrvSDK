@@ -5,6 +5,7 @@
 
 extern int SDKKallsymsInit();
 extern int SDKOffsetsInit();
+extern int SDKLogInitialize();
 
 int SDKInit(uintptr_t entry)
 {
@@ -12,6 +13,9 @@ int SDKInit(uintptr_t entry)
 		return r;
 
 	if (int r = SDKOffsetsInit())
+		return r;
+
+	if (int r = SDKLogInitialize())
 		return r;
 
 	return 0;
