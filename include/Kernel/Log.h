@@ -4,7 +4,9 @@
 #include <Kernel/File.h>
 #include <fslc_string.h>
 
+#ifdef VBXIDRVSDK_LOGFILE_ENABLE
 constexpr auto VBXIDRVSDK_LOGPATH = VBXIDRVSDK_LOGFOLDER "/" VBXIDRVSDK_LOGFILENAME;
+#endif
 constexpr auto VBXIDRVSDK_MAXFMTLEN = 256;
 
 DECL(int) printk(const char* format, ...);
@@ -35,3 +37,9 @@ inline void KLOG_PRINT(const char* format, Args&&... args) {
 	}
 #endif
 	};
+
+#ifdef BITS32
+#define PTRFMT "%08x"
+#else
+#define PTRFMT "%llx"
+#endif
