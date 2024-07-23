@@ -90,3 +90,23 @@ TaskComm TaskCommGet(Task tsk)
 
     return TaskComm(result);
 }
+
+bool TaskCommCompare(const char* comm, const char* with)
+{
+    auto commLen = fslc_strlen(comm);
+    auto withLen = fslc_strlen(with);
+    auto shorter = commLen > withLen ? with : comm;
+    auto larger = comm == shorter ? with : comm;
+
+    // a partial comparation need to be done, becouse
+    // of the fact that comm just have 16 chars
+
+    return fslc_strstr(larger, shorter) != nullptr;
+}
+
+REGPARAMDECL(void) schedule();
+
+void TaskCurrentYield()
+{
+    schedule();
+}

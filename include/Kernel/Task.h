@@ -16,3 +16,5 @@ Task TaskGroupLeaderParentGet(Task tsk);
 void TaskForEachProcessAncestor(Task tsk, etl::delegate<bool(Task)> callback);
 void TaskForEachTaskAncestor(Task tsk, etl::delegate<bool(Task)> callback);
 TaskComm TaskCommGet(Task task);
+bool TaskCommCompare(const char* comm, const char* with);
+void TaskCurrentYield();
